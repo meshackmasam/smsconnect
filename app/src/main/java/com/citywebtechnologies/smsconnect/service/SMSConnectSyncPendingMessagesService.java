@@ -167,16 +167,13 @@ public class SMSConnectSyncPendingMessagesService extends Service {
 
     protected int sendMessage(String senderNumber, String replyMessage, long smsId) {
         try {
-
+            Log.d(TAG, "sending id " + smsId);
             String SENT = "SMS_SENT";
             Intent in  =  new Intent(SENT);
-            Bundle b = new Bundle();
-            b.putLong("key", smsId);
-            in.putExtras(b);
+            in.putExtra("smsId", smsId);
 
 
-            PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
-                   in ,0);
+            PendingIntent sentPI = PendingIntent.getBroadcast(this,0,in ,PendingIntent.FLAG_CANCEL_CURRENT);
 
             //---when the SMS has been sent---
             registerReceiver(new BroadcastReceiver() {
@@ -218,11 +215,12 @@ public class SMSConnectSyncPendingMessagesService extends Service {
                 public int init() {
 
                     sms = new ConnectSMS();
-                    sms.setId(b.getLong("key"));
+                    sms.setId(b.getLong("smsId"));
                     sms.setDateSent(Calendar.getInstance().getTimeInMillis());
                     sms.setSendStatus(rt);
-                    Log.d(TAG, "MessageId : " + sms.getId() + ", status: " + sms.getSentStatus());
+                    Log.d(TAG, "MessageId : " + b.getLong("smsId") + ", id: " + ds.updateMessageSendStatus(sms));
                     ds.updateMessageSendStatus(sms);
+                    Log.d(TAG, "MessageId : " + sms.getId() + ", status: " + sms.getSentStatus());
                     return 1;
                 }
             }, new IntentFilter(SENT));
