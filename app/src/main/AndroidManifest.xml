@@ -42,12 +42,20 @@ new Permissions added and some minor updates
 
         <service
             android:name=".service.SMSConnectService"
-            android:enabled="true">
-        </service>
-        <service
-            android:name=".service.SMSConnectSyncPendingMessagesService"
             android:enabled="true"
             android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.citywebtechnologies.smsconnect.service.SMSConnectSyncPendingMessagesService"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
+            </intent-filter>
         </service>
 
         <!-- <receiver android:name="com.citywebtechnologies.smsconnect.receiver.SMSConnectReceiverer" > -->
@@ -55,14 +63,21 @@ new Permissions added and some minor updates
         <!-- <action android:name="android.provider.Telephony.SMS_RECEIVED" /> -->
         <!-- </intent-filter> -->
         <!-- </receiver> -->
-        <receiver android:name=".receiver.AlarmReceiver">
+        <receiver android:name=".receiver.AlarmReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
+            </intent-filter>
         </receiver>
         <receiver
             android:name="com.citywebtechnologies.smsconnect.receiver.BootReceiver"
-            android:enabled="true">
+            android:enabled="true"
+            android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED">
-                </action>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
             </intent-filter>
         </receiver>
 
@@ -71,6 +86,7 @@ new Permissions added and some minor updates
             android:enabled="true"
             android:exported="true">
             <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
             </intent-filter>
 

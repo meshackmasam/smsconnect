@@ -3,9 +3,13 @@ package com.citywebtechnologies.smsconnect;
 import java.util.List;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Debug;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -33,27 +37,23 @@ public class MainActivity extends Activity {
     Button b;
     Boolean running = false;
     private static String TAG = "Main Activity";
-
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            refresh(false);
+            Log.d(TAG, "refreshing - - " + intent.toString());
+        }
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        running = true;
-        smsListView = (ListView) findViewById(R.id.smsList);
-
+        registerReceiver(broadcastReceiver, new IntentFilter(DownloadAndSendSMSService.BROADCAST_ACTION));
+        registerReceiver(broadcastReceiver, new IntentFilter(SMSConnectSyncPendingMessagesService.BROADCAST_ACTION));
+        //intent = new Intent(this, DownloadAndSendSMSService.class);
         ds = new Datasource(context);
         ds.open();
-        String orderBy = DBOpenHelper.MSG_COLUMN_ID + " DESC";
-        connectSMSList = ds.findFilterdMessages(null, orderBy);
-
-        if (connectSMSList.size() > 0) {
-            Log.i(TAG, "Found " + connectSMSList.size() + " records");
-            adapter = new ConnectSMSListAdapter(context, connectSMSList);
-            smsListView.setAdapter(adapter);
-        } else
-            Log.d(TAG, "No records found");
-
+        smsListView = (ListView) findViewById(R.id.smsList);
         smsListView.setOnItemClickListener(new OnItemClickListener() {
 
             @Override
@@ -70,7 +70,8 @@ public class MainActivity extends Activity {
         b.setOnClickListener(new MyClass());
         CommonUtility.setAlarm(context);
         startService(new Intent(context, SMSConnectSyncPendingMessagesService.class));
-        running = false;
+        refresh(false);
+
     }
 
     @Override
@@ -90,41 +91,70 @@ public class MainActivity extends Activity {
         }
         return super.onOptionsItemSelected(item);
     }
+    protected void refresh(boolean b) {
+        if (running)
+            return;
+        running = true;
+        if(b)
+        {
+            new Thread(new Runnable() {
+                public void run() {
+                    context.startService(new Intent(context,DownloadAndSendSMSService.class));
+                    startService(new Intent(context, SMSConnectSyncPendingMessagesService.class));
+                }
+            }).start();
 
-    //reload view on resume
-    @Override
+        }
+        smsListView.setAdapter(null);
+        running=false;
+        new Thread(new Runnable() {
+            public void run() {
+                String orderBy = DBOpenHelper.MSG_COLUMN_ID + " DESC";
+                connectSMSList=ds.findFilterdMessages(null,orderBy);
+
+                if(connectSMSList.size()>0)
+
+                {
+                    Log.i(TAG, "Found " + connectSMSList.size() + " records");
+
+                    adapter = new ConnectSMSListAdapter(context, connectSMSList);
+
+
+                    MainActivity.this.runOnUiThread(new Runnable() {
+                        public void run() {
+                                smsListView.setAdapter(adapter);
+
+                        }
+
+                    });
+
+
+                }
+                else
+                    Log.d(TAG,"No records found");
+
+
+            }
+        }).start();
+
+
+
+        }
+                //reload view on resume
+        @Override
     protected void onResume() {
         ds.open();
         super.onResume();
-        if (running)
-            return;
-
-        running = true;
-        smsListView = (ListView) findViewById(R.id.smsList);
-
-        ds = new Datasource(context);
-        ds.open();
-        String orderBy = DBOpenHelper.MSG_COLUMN_ID + " DESC";
-        connectSMSList = ds.findFilterdMessages(null, orderBy);
-
-        if (connectSMSList.size() > 0) {
-            Log.i(TAG, "Found " + connectSMSList.size() + " records");
-            adapter = new ConnectSMSListAdapter(context, connectSMSList);
-            smsListView.setAdapter(adapter);
-        } else
-            Log.d(TAG, "No records found");
-
-        running = false;
-
-
-
-
+        registerReceiver(broadcastReceiver, new IntentFilter(DownloadAndSendSMSService.BROADCAST_ACTION));
+        registerReceiver(broadcastReceiver, new IntentFilter(SMSConnectSyncPendingMessagesService.BROADCAST_ACTION));
+        refresh(false);
     }
 
     @Override
     protected void onPause() {
         ds.close();
         super.onPause();
+        unregisterReceiver(broadcastReceiver);
     }
 
     @Override
@@ -139,29 +169,7 @@ public class MainActivity extends Activity {
         //refresh click event listener
         @Override
         public void onClick(View v) {
-            if (running)
-                return;
-            running = true;
-            smsListView = (ListView) findViewById(R.id.smsList);
-
-            ds = new Datasource(context);
-            ds.open();
-            String orderBy = DBOpenHelper.MSG_COLUMN_ID + " DESC";
-            connectSMSList = ds.findFilterdMessages(null, orderBy);
-
-            if (connectSMSList.size() > 0) {
-                Log.i(TAG, "Found " + connectSMSList.size() + " records");
-                adapter = new ConnectSMSListAdapter(context, connectSMSList);
-                smsListView.setAdapter(adapter);
-            } else
-                Log.d(TAG, "No records found");
-
-
-                    context.startService(new Intent(context,DownloadAndSendSMSService.class));
-                    startService(new Intent(context, SMSConnectSyncPendingMessagesService.class));
-
-
-            running = false;
+refresh(true);
         }
 
     }

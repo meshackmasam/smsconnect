@@ -2,9 +2,11 @@ package com.citywebtechnologies.smsconnect.service;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-
+import android.content.Context;
 import com.citywebtechnologies.smsconnect.RestClient;
 import com.citywebtechnologies.smsconnect.db.Datasource;
 import com.citywebtechnologies.smsconnect.model.ConnectSMS;
@@ -23,15 +25,17 @@ import org.json.JSONObject;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 public class DownloadAndSendSMSService extends Service {
 
     private Datasource ds;
     private ConnectSMS sms;
-
+    private Context context = this;
     private static final String TAG = "Download service";
-
+    public static final String BROADCAST_ACTION = "com.citywebtechnologies.smsconnect.service.DownloadAndSendSMSService.downloaded";
+    Intent intent;
     public DownloadAndSendSMSService() {
     }
 
@@ -40,11 +44,17 @@ public class DownloadAndSendSMSService extends Service {
         // TODO: Return the communication channel to the service.
         throw new UnsupportedOperationException("Not yet implemented");
     }
+    private void DisplayLoggingInfo() {
+        Log.d(TAG, "entered DisplayLoggingInfo");
 
+        intent.putExtra("time", new Date().toLocaleString());
+        sendBroadcast(intent);
+    }
     @Override
     public void onCreate() {
         ds = new Datasource(getApplicationContext());
         ds.open();
+        intent = new Intent(BROADCAST_ACTION);
     }
 
     @Override
@@ -56,7 +66,7 @@ public class DownloadAndSendSMSService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "Entered download servie onStartCommand method");
+        Log.d(TAG, "Entered download service onStartCommand method");
 
         RequestParams params = new RequestParams();
         params.add("cmd", "fetch");
@@ -90,14 +100,16 @@ public class DownloadAndSendSMSService extends Service {
                                 //check whether the message already exists by using original smsId
                                 if (!ds.MessageExists(sms)) {
                                     ds.createMessage(sms);
-                                }else {
+                                } else {
                                     Log.d(TAG, "SMS already exists ");
                                 }
-                            }
 
+                            }
+                            startService(new Intent(context, SMSConnectSyncPendingMessagesService.class));
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
+                        DisplayLoggingInfo();
                     }
 
                     @Override
