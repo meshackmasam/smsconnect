@@ -56,6 +56,7 @@ public class SMSConnectSyncPendingMessagesService extends Service {
             for (int i = 0; i < pendingSMSCount; i++) {
 
                 final long smsId = pendingSms.get(i).getId();
+                final long smsId2 = pendingSms.get(i).getRec();
                 sms = new ConnectSMS();
                 sms.setId(pendingSms.get(i).getId());
                 sms.setAddress(pendingSms.get(i).getAddress());
@@ -80,7 +81,7 @@ public class SMSConnectSyncPendingMessagesService extends Service {
                 }
                 sendMessage(sms.getAddress(), sms.getMessage());
                 ds.updateMessageSendStatus(sms);
-                updateServerSendStatus(smsId);
+                updateServerSendStatus(smsId,smsId2);
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
@@ -93,11 +94,11 @@ public class SMSConnectSyncPendingMessagesService extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
-    private void updateServerSendStatus(final long smsId) {
+    private void updateServerSendStatus(final long smsId,final long smsId2) {
         RequestParams params = new RequestParams();
         params.add("cmd", "update");
         params.add("status", "sent");
-        params.put("sms_id", "" + smsId);
+        params.put("sms_id", "" + smsId2);
 
         Log.d(TAG, "Request parameters " + params.toString());
 
