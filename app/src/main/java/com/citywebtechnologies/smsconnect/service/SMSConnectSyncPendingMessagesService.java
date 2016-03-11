@@ -69,7 +69,7 @@ public class SMSConnectSyncPendingMessagesService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "Entered sms sync service onStartCommand method");
 
-        String selection = DBOpenHelper.MSG_COLUMN_SENT_STATUS + " = 0 or " + DBOpenHelper.MSG_COLUMN_SENT_STATUS + " = 2";
+        String selection = DBOpenHelper.MSG_COLUMN_SENT_STATUS + " != 1 ";
 
         Log.d(TAG, "queryer = " + selection);
         String orderBy = DBOpenHelper.MSG_COLUMN_ID + " DESC";
