@@ -173,7 +173,7 @@ public class SMSConnectSyncPendingMessagesService extends Service {
             in.putExtra("smsId", smsId);
 
 
-            PendingIntent sentPI = PendingIntent.getBroadcast(this,0,in ,PendingIntent.FLAG_CANCEL_CURRENT);
+            PendingIntent sentPI = PendingIntent.getBroadcast(this,0,in ,PendingIntent.FLAG_UPDATE_CURRENT);
 
             //---when the SMS has been sent---
             registerReceiver(new BroadcastReceiver() {
