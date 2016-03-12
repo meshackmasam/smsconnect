@@ -36,6 +36,7 @@ public class SMSConnectSyncPendingMessagesService extends Service {
     Intent intent;
     private Datasource ds;
     private ConnectSMS sms;
+    private Boolean running = false;
     private void DisplayLoggingInfo() {
         Log.d(TAG, "entered DisplayLoggingInfo");
         try {
@@ -67,6 +68,9 @@ public class SMSConnectSyncPendingMessagesService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (running)
+            return super.onStartCommand(intent, flags, startId);
+        running = true;
         Log.d(TAG, "Entered sms sync service onStartCommand method");
 
         String selection = DBOpenHelper.MSG_COLUMN_SENT_STATUS + " != 1 ";
@@ -87,28 +91,21 @@ public class SMSConnectSyncPendingMessagesService extends Service {
                 sms.setSendStatus(pendingSms.get(i).getSentStatus());
                 sms.setDateReceived(pendingSms.get(i).getDateReceived());
 
-                String senderName = sms.getAddress();
-                final String senderNumber = sms.getAddress();
-                String keyword = null;
-                String[] msgParts = null;
-                String msgContent = null;
-                if (sms.getMessage().contains(" ")) {
-                    keyword = sms.getMessage().substring(0,
-                            sms.getMessage().indexOf(' '));
-                    msgParts = sms.getMessage().split(" ", 2);
-                    if (msgParts.length >= 2)
-                        msgContent = msgParts[1];
-                } else {
-                    keyword = sms.getMessage();
-                    msgContent = keyword;
-                }
                 if (sms.getSentStatus() != 2) {
-                    sendMessage(sms.getAddress(), sms.getMessage(),smsId);
+                    if (sms.getSentStatus() != 100){
+                        sms.setSendStatus(100);
+                        ds.updateMessageSendStatus(sms);
+                        sendMessage(sms.getAddress(), sms.getMessage(), smsId);
+                    }else{
+                        sms.setSendStatus(99);
+                        ds.updateMessageSendStatus(sms);
+                    }
                 } else {
                     updateServerSendStatus(smsId, smsId2);
                 }
                 try {
-                    Thread.sleep(100);
+                    DisplayLoggingInfo();
+                    Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -116,7 +113,9 @@ public class SMSConnectSyncPendingMessagesService extends Service {
             }
         } else
             Log.d(TAG, "All is okay");
+
         DisplayLoggingInfo();
+        running=false;
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -173,7 +172,7 @@ public class SMSConnectSyncPendingMessagesService extends Service {
             in.putExtra("smsId", smsId);
 
 
-            PendingIntent sentPI = PendingIntent.getBroadcast(this,0,in ,PendingIntent.FLAG_UPDATE_CURRENT);
+            PendingIntent sentPI = PendingIntent.getBroadcast(this,(int)smsId,in ,PendingIntent.FLAG_CANCEL_CURRENT);
 
             //---when the SMS has been sent---
             registerReceiver(new BroadcastReceiver() {
@@ -221,10 +220,10 @@ public class SMSConnectSyncPendingMessagesService extends Service {
                     Log.d(TAG, "MessageId : " + b.getLong("smsId") + ", id: " + ds.updateMessageSendStatus(sms));
                     ds.updateMessageSendStatus(sms);
                     Log.d(TAG, "MessageId : " + sms.getId() + ", status: " + sms.getSentStatus());
+                    unregisterReceiver(this);
                     return 1;
                 }
             }, new IntentFilter(SENT));
-
             Log.d(TAG, "Reply message: " + replyMessage + ", number: " + senderNumber);
             SmsManager.getDefault().sendTextMessage(senderNumber, null, replyMessage, sentPI, null);
             return 1;

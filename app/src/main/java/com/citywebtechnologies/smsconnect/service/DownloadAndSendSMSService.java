@@ -33,6 +33,7 @@ public class DownloadAndSendSMSService extends Service {
     private Datasource ds;
     private ConnectSMS sms;
     private Context context = this;
+    private Boolean running = false;
     private static final String TAG = "Download service";
     public static final String BROADCAST_ACTION = "com.citywebtechnologies.smsconnect.service.DownloadAndSendSMSService.downloaded";
     Intent intent;
@@ -66,6 +67,9 @@ public class DownloadAndSendSMSService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (running)
+            return super.onStartCommand(intent, flags, startId);
+        running = true;
         Log.d(TAG, "Entered download service onStartCommand method");
 
         RequestParams params = new RequestParams();
@@ -118,7 +122,7 @@ public class DownloadAndSendSMSService extends Service {
                         Log.d(TAG, "Error code" + statusCode + ", Response body " + responseBody);
                     }
                 });
-
+        running=false;
         return super.onStartCommand(intent, flags, startId);
     }
 

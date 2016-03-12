@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Debug;
+import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Menu;
@@ -40,7 +41,7 @@ public class MainActivity extends Activity {
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            refresh(false);
+            refresh(true);
             Log.d(TAG, "refreshing - - " + intent.toString());
         }
     };
@@ -95,18 +96,13 @@ public class MainActivity extends Activity {
         if (running)
             return;
         running = true;
-        if(b)
-        {
-            new Thread(new Runnable() {
-                public void run() {
-                    context.startService(new Intent(context,DownloadAndSendSMSService.class));
-                    startService(new Intent(context, SMSConnectSyncPendingMessagesService.class));
-                }
-            }).start();
-
+        if (!b){
+            startService(new Intent(context,DownloadAndSendSMSService.class));
+            startService(new Intent(context, SMSConnectSyncPendingMessagesService.class));
         }
+
         smsListView.setAdapter(null);
-        running=false;
+
         new Thread(new Runnable() {
             public void run() {
                 String orderBy = DBOpenHelper.MSG_COLUMN_ID + " DESC";
@@ -130,8 +126,17 @@ public class MainActivity extends Activity {
 
 
                 }
-                else
-                    Log.d(TAG,"No records found");
+                else{
+                    MainActivity.this.runOnUiThread(new Runnable() {
+                        public void run() {
+                            Toast.makeText(context, "No records found \n This could mean remote server has no sms or remote server not queryed yet \n If no data displayed for sometime press home and reopen the application", Toast.LENGTH_LONG).show();
+
+                        }
+
+                    });
+                   Log.d(TAG, "No records found");
+                }
+                running=false;
 
 
             }
@@ -147,7 +152,7 @@ public class MainActivity extends Activity {
         super.onResume();
         registerReceiver(broadcastReceiver, new IntentFilter(DownloadAndSendSMSService.BROADCAST_ACTION));
         registerReceiver(broadcastReceiver, new IntentFilter(SMSConnectSyncPendingMessagesService.BROADCAST_ACTION));
-        refresh(false);
+        refresh(true);
     }
 
     @Override
@@ -169,7 +174,9 @@ public class MainActivity extends Activity {
         //refresh click event listener
         @Override
         public void onClick(View v) {
-refresh(true);
+            v.setClickable(false);
+            refresh(false);
+            v.setClickable(true);
         }
 
     }
