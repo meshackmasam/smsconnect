@@ -53,6 +53,8 @@ public class ConnectSMSListAdapter extends BaseAdapter {
 			tv.setText("No service, Retrying");
 		else if (sms.getSentStatus() == 5)
 			tv.setText("No radio, Retrying");
+		else if (sms.getSentStatus() == 6)
+			tv.setText("Permission Denied, Retrying");
 		else if (sms.getSentStatus() == 100 || sms.getSentStatus() == 99)
 			tv.setText("Queued");
 		else
