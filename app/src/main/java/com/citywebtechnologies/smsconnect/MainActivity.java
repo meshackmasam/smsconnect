@@ -1,15 +1,19 @@
 package com.citywebtechnologies.smsconnect;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Debug;
 import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Menu;
@@ -31,7 +35,7 @@ import com.citywebtechnologies.smsconnect.utils.CommonUtility;
 public class MainActivity extends Activity {
 
     private Context context = this;
-    private List<ConnectSMS> connectSMSList;
+    //private List<ConnectSMS> connectSMSList;
     private Datasource ds;
     private ListView smsListView;
     private ConnectSMSListAdapter adapter;
@@ -41,7 +45,7 @@ public class MainActivity extends Activity {
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            refresh(true);
+            refresh(intent.getBooleanExtra("refresh",false));
             Log.d(TAG, "refreshing - - " + intent.toString());
         }
     };
@@ -60,18 +64,25 @@ public class MainActivity extends Activity {
             @Override
             public void onItemClick(AdapterView<?> rootView, View v,
                                     int position, long id) {
-                connectSMSList.get(position);
-                Toast.makeText(context, "Not implemented for now",
-                        Toast.LENGTH_LONG).show();
+                //connectSMSList.get(position);
             }
         });
 
         //bind refresh button click
         b = (Button) findViewById(R.id.button1);
-        b.setOnClickListener(new MyClass());
+        b.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                v.setClickable(false);
+                refresh(true);
+                v.setClickable(true);
+            }
+        });
         CommonUtility.setAlarm(context);
         startService(new Intent(context, SMSConnectSyncPendingMessagesService.class));
-        refresh(false);
+        adapter = new ConnectSMSListAdapter(context, new ArrayList<ConnectSMS>());
+        smsListView.setAdapter(adapter);
+        refresh(true);
 
     }
 
@@ -92,33 +103,45 @@ public class MainActivity extends Activity {
         }
         return super.onOptionsItemSelected(item);
     }
-    protected void refresh(boolean b) {
+    protected void refresh(boolean runServices) {
+
+
+
+        final String[] permissions = new String[]
+                {Manifest.permission.BROADCAST_SMS,Manifest.permission.SEND_SMS};
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) !=
+                PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, permissions, 1);
+        }
+
+
+
+
         if (running)
             return;
         running = true;
-        if (!b){
+        if (runServices){
             startService(new Intent(context,DownloadAndSendSMSService.class));
             startService(new Intent(context, SMSConnectSyncPendingMessagesService.class));
         }
 
-        smsListView.setAdapter(null);
 
         new Thread(new Runnable() {
             public void run() {
                 String orderBy = DBOpenHelper.MSG_COLUMN_ID + " DESC";
-                connectSMSList=ds.findFilterdMessages(null,orderBy);
+                final List<ConnectSMS> connectSMSList = ds.findFilterdMessages(null,orderBy);
 
                 if(connectSMSList.size()>0)
 
                 {
                     Log.i(TAG, "Found " + connectSMSList.size() + " records");
 
-                    adapter = new ConnectSMSListAdapter(context, connectSMSList);
+                    //adapter = new ConnectSMSListAdapter(context, connectSMSList);
 
 
                     MainActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
-                                smsListView.setAdapter(adapter);
+                                adapter.updateAdapter(connectSMSList);
 
                         }
 
@@ -166,19 +189,6 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         ds.close();
         super.onDestroy();
-    }
-
-
-    public class MyClass implements View.OnClickListener {
-
-        //refresh click event listener
-        @Override
-        public void onClick(View v) {
-            v.setClickable(false);
-            refresh(false);
-            v.setClickable(true);
-        }
-
     }
 
 }

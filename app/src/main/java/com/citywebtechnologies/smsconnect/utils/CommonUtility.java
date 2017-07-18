@@ -36,17 +36,17 @@ public class CommonUtility {
 
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTimeInMillis(System.currentTimeMillis());
-		calendar.set(Calendar.HOUR_OF_DAY, 6);
-		calendar.set(Calendar.MINUTE, 0);
+		calendar.set(Calendar.MINUTE, 2);
 		//some edits happened here
+
 		Intent intent2 = new Intent(context, BroadcastReceiver.class);
+
 		boolean alarmIsSet = (PendingIntent.getBroadcast(context, 0,intent2, PendingIntent.FLAG_NO_CREATE) != null);
 
-		AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-
 		if (!alarmIsSet){
+			AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 			alarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
-					calendar.getTimeInMillis(), AlarmManager.INTERVAL_HALF_HOUR, alarmIntent);
+					calendar.getTimeInMillis(), 100 * 1000, alarmIntent);
 		}
 
 	}

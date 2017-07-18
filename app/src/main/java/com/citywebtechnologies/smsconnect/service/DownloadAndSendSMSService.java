@@ -8,6 +8,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.content.Context;
 import com.citywebtechnologies.smsconnect.RestClient;
+import com.citywebtechnologies.smsconnect.db.DBOpenHelper;
 import com.citywebtechnologies.smsconnect.db.Datasource;
 import com.citywebtechnologies.smsconnect.model.ConnectSMS;
 import com.google.gson.FieldNamingStrategy;
@@ -72,56 +73,70 @@ public class DownloadAndSendSMSService extends Service {
         running = true;
         Log.d(TAG, "Entered download service onStartCommand method");
 
-        RequestParams params = new RequestParams();
-        params.add("cmd", "fetch");
-        params.add("limit", "10");
-        params.put("offset", "0");
 
-        RestClient.post("sms.php", params,
-                new JsonHttpResponseHandler() {
+        String selection = DBOpenHelper.MSG_COLUMN_SENT_STATUS + " > 1 ";
+        String orderBy = DBOpenHelper.MSG_COLUMN_ID + " DESC";
+        List<ConnectSMS> pendingSms = ds.findFilterdMessages(selection, orderBy);
 
-                    @Override
-                    public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                        super.onSuccess(statusCode, headers, response);
+        if (pendingSms.size() < 1) {
 
-                        Log.d(TAG,"SMS to send \n"+response.toString());
+            RequestParams params = new RequestParams();
+            params.add("cmd", "fetch");
+            params.add("limit", "10");
+            params.put("offset", "0");
 
-                        try {
-                            if (response.getJSONArray("messages").equals(null))
-                                return;
-                            JSONArray smsJarry = response.getJSONArray("messages");
-                            List<ConnectSMS> connectSMSes = getMessagesFromJsonResponse(smsJarry);
+            RestClient.post("sms.php", params,
+                    new JsonHttpResponseHandler() {
 
-                            for (ConnectSMS sms : connectSMSes) {
-                                //assign original smsId to Rec for record keeping
-                                sms.setRec(sms.getId());
-                                Log.d(TAG, "starting up sms recepient" + sms.getAddress());
-                                Log.d(TAG, "starting up sms msg" + sms.getMessage());
-                                Log.d(TAG, "starting up sms RecId" + sms.getId());
-                                sms.setAddress("0" + sms.getAddress());
-                                sms.setSendStatus(0);
-                                sms.setDateReceived(Calendar.getInstance().getTimeInMillis());
-                                //check whether the message already exists by using original smsId
-                                if (!ds.MessageExists(sms)) {
-                                    ds.createMessage(sms);
-                                } else {
-                                    Log.d(TAG, "SMS already exists ");
+                        @Override
+                        public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                            super.onSuccess(statusCode, headers, response);
+
+                            Log.d(TAG, "SMS to send \n" + response.toString());
+
+                            try {
+                                if (response.isNull("messages")) {
+                                    Log.d(TAG, "No messages where found");
+                                    return;
                                 }
+                                JSONArray smsJarry = response.getJSONArray("messages");
+                                List<ConnectSMS> connectSMSes = getMessagesFromJsonResponse(smsJarry);
 
+                                for (ConnectSMS sms : connectSMSes) {
+                                    //assign original smsId to Rec for record keeping
+                                    sms.setRec(sms.getId());
+                                    Log.d(TAG, "starting up sms recipient" + sms.getAddress());
+                                    Log.d(TAG, "starting up sms msg" + sms.getMessage());
+                                    Log.d(TAG, "starting up sms RecId" + sms.getId());
+                                    sms.setAddress(sms.getAddress());
+                                    sms.setSendStatus(9);
+                                    sms.setDateReceived(Calendar.getInstance().getTimeInMillis());
+                                    //check whether the message already exists by using original smsId
+                                    if (!ds.MessageExists(sms)) {
+                                        ds.createMessage(sms);
+                                    } else {
+                                        Log.d(TAG, "SMS already exists ");
+                                    }
+
+                                }
+                                startService(new Intent(context, SMSConnectSyncPendingMessagesService.class));
+                            } catch (JSONException e) {
+                                e.printStackTrace();
                             }
-                            startService(new Intent(context, SMSConnectSyncPendingMessagesService.class));
-                        } catch (JSONException e) {
-                            e.printStackTrace();
+                            DisplayLoggingInfo();
                         }
-                        DisplayLoggingInfo();
-                    }
 
-                    @Override
-                    public void onFailure(int statusCode, Header[] headers, String responseBody, Throwable e) {
-                        super.onFailure(statusCode, headers, responseBody, e);
-                        Log.d(TAG, "Error code" + statusCode + ", Response body " + responseBody);
-                    }
-                });
+                        @Override
+                        public void onFailure(int statusCode, Header[] headers, String responseBody, Throwable e) {
+                            super.onFailure(statusCode, headers, responseBody, e);
+                            Log.d(TAG, "Error code" + statusCode + ", Response body " + responseBody);
+                        }
+                    });
+        }else
+        {
+            Log.d(TAG, "Pending Messages available, Exit download service onStartCommand method");
+        }
+
         running=false;
         return super.onStartCommand(intent, flags, startId);
     }
@@ -144,9 +159,6 @@ public class DownloadAndSendSMSService extends Service {
 
                 if (field.getName().equals("message"))
                     return "smsBody";
-
-                if (field.getName().equals("dateSent"))
-                    return "smsSchedule";
 
                 return field.getName();
             }

@@ -1,29 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="5dp"
+    app:cardBackgroundColor="@android:color/white"
+    app:cardCornerRadius="3dp"
+    app:cardElevation="1dp">
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#F0F0F0"
+        android:layout_margin="3dp"
+        android:background="@android:color/transparent"
         android:orientation="vertical"
-        android:padding="10dp" >
-
+        android:padding="5dp">
 
 
         <TextView
             android:id="@+id/address"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="3dp" />
+            android:layout_marginBottom="3dp"
+            android:text="234356412432"
+            android:textAppearance="@android:style/TextAppearance" />
 
         <TextView
             android:id="@+id/message"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:padding="3dp"
+            android:singleLine="true"
+            android:text="wdcvfebgrbvf erg tg trge wrv"
+            android:textAppearance="@android:style/TextAppearance.DeviceDefault.Small" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:weightSum="1" >
+            android:weightSum="1">
 
             <TextView
                 android:id="@+id/sentStatus"
@@ -31,7 +47,8 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="start"
                 android:layout_weight="0.6"
-                android:textColor="#CCCCCC" />
+                android:text="sent"
+                android:textAppearance="@android:style/TextAppearance.DeviceDefault.Small" />
 
             <TextView
                 android:id="@+id/dateReceived"
@@ -40,9 +57,11 @@
                 android:layout_gravity="end"
                 android:layout_weight="0.4"
                 android:gravity="end"
-                android:textSize="12dp"
-                android:textIsSelectable="false" />
+                android:text="23434"
+                android:textAppearance="@android:style/TextAppearance.DeviceDefault.Small"
+                android:textIsSelectable="false"
+                android:textSize="12dp" />
         </LinearLayout>
 
     </LinearLayout>
-
+</android.support.v7.widget.CardView>

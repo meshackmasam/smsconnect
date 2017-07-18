@@ -3,13 +3,7 @@
 new Permissions added and some minor updates
 -->
 <manifest package="com.citywebtechnologies.smsconnect"
-          xmlns:android="http://schemas.android.com/apk/res/android"
-          android:versionCode="1"
-          android:versionName="1.0">
-
-    <uses-sdk
-        android:minSdkVersion="8"
-        android:targetSdkVersion="22"/>
+          xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>

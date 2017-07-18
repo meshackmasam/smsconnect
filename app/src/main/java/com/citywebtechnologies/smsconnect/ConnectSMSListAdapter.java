@@ -15,13 +15,39 @@ import android.widget.TextView;
 
 import com.citywebtechnologies.smsconnect.model.ConnectSMS;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
 public class ConnectSMSListAdapter extends BaseAdapter {
 	Context context;
 	List<ConnectSMS> connectSMSList;
 
-	public ConnectSMSListAdapter(Context context, List<ConnectSMS> smsList) {
+
+
+
+	static class ViewHolder {
+		@Bind(R.id.address)
+		TextView address;
+		@Bind(R.id.message)
+		TextView message;
+		@Bind(R.id.sentStatus)
+		TextView sentStatus;
+		@Bind(R.id.dateReceived)
+		TextView dateReceived;
+		public ViewHolder(View view) {
+			ButterKnife.bind(this, view);
+		}
+	}
+
+	ConnectSMSListAdapter(Context context, List<ConnectSMS> smsList) {
 		this.context = context;
 		this.connectSMSList = smsList;
+	}
+
+	void updateAdapter(List<ConnectSMS> data){
+		connectSMSList.clear();
+		connectSMSList.addAll(data);
+		notifyDataSetChanged();
 	}
 
 	@SuppressLint("InflateParams")
@@ -30,42 +56,51 @@ public class ConnectSMSListAdapter extends BaseAdapter {
 		LayoutInflater inflater = (LayoutInflater) context
 				.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-		if (convertView == null) {
+		ConnectSMS sms = connectSMSList.get(position);
+		/*if (convertView == null) {
 			convertView = inflater.inflate(R.layout.listitem_msg, null);
+		}*/
+		ViewHolder holder;
+		if (convertView != null) {
+			holder = (ViewHolder) convertView.getTag();
+		} else {
+			convertView = inflater.inflate(R.layout.listitem_msg, null);
+			holder = new ViewHolder(convertView);
+			convertView.setTag(holder);
 		}
 
-		ConnectSMS sms = connectSMSList.get(position);
+		holder.message.setText(sms.getMessage());
 
-		TextView tv = (TextView) convertView.findViewById(R.id.message);
-		tv.setText(sms.getMessage());
-
-		tv = (TextView) convertView.findViewById(R.id.address);
-		tv.setText(sms.getAddress());
-
-		tv = (TextView) convertView.findViewById(R.id.sentStatus);
+		holder.address.setText(sms.getAddress());
 		if (sms.getSentStatus() == 1)
-			tv.setText("Sent & server updated");
+			holder.sentStatus.setText("Sent & server updated");
 		else if (sms.getSentStatus() == 2)
-			tv.setText("Sent, Waiting server update");
+			holder.sentStatus.setText("Sent, Waiting server update");
 		else if (sms.getSentStatus() == 3)
-			tv.setText("Failed, Retrying");
+			holder.sentStatus.setText("Failed, Retrying");
 		else if (sms.getSentStatus() == 4)
-			tv.setText("No service, Retrying");
+			holder.sentStatus.setText("No service, Retrying");
 		else if (sms.getSentStatus() == 5)
-			tv.setText("No radio, Retrying");
+			holder.sentStatus.setText("No radio, Retrying");
 		else if (sms.getSentStatus() == 6)
-			tv.setText("Permission Denied, Retrying");
+			holder.sentStatus.setText("Permission Denied, Retrying");
+		else if (sms.getSentStatus() == -1 || sms.getSentStatus() == 11)
+			holder.sentStatus.setText("Failed, system error");
 		else if (sms.getSentStatus() == 100 || sms.getSentStatus() == 99)
-			tv.setText("Queued");
+			holder.sentStatus.setText("Queued");
 		else
-			tv.setText("Pending");
-		tv = (TextView) convertView.findViewById(R.id.dateReceived);
+			holder.sentStatus.setText("Pending");
 
-		SimpleDateFormat sdf = new SimpleDateFormat("d MMM yy HH:mm",
-				Locale.getDefault());
 
-		tv.setText(sdf.format(new Date(sms.getDateSent())));
+		if (sms.getDateSent() > 0) {
+			SimpleDateFormat sdf = new SimpleDateFormat("d MMM yy HH:mm",
+					Locale.getDefault());
 
+			holder.dateReceived.setText(sdf.format(new Date(sms.getDateSent())));
+		}else
+		{
+			holder.dateReceived.setText("...");
+		}
 		return convertView;
 	}
 
