@@ -1,7 +1,9 @@
 package com.citywebtechnologies.smsconnect;
 
+import android.content.Context;
 import android.util.Log;
 
+import com.citywebtechnologies.smsconnect.utils.CommonUtility;
 import com.citywebtechnologies.smsconnect.utils.Constants;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
@@ -13,16 +15,17 @@ public class RestClient {
 
     public static void get(String url, RequestParams params,
                            AsyncHttpResponseHandler responseHandler) {
-        client.get(getAbsoluteUrl(url), params, responseHandler);
+        client.get(url, params, responseHandler);
     }
 
     public static void post(String url, RequestParams params,
                             AsyncHttpResponseHandler responseHandler) {
-        client.post(getAbsoluteUrl(url), params, responseHandler);
+        client.post(url, params, responseHandler);
     }
 
-    private static String getAbsoluteUrl(String url) {
-        Log.i(TAG, Constants.BASE_URL + url);
-        return Constants.BASE_URL + url;
+    public static String getAbsoluteUrl(Context context, String url) {
+        String _url = CommonUtility.getSmsServer(context) + "/" + url;
+        Log.i(TAG, _url);
+        return _url;
     }
 }

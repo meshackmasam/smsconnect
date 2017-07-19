@@ -7,6 +7,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
 import android.telephony.SmsManager;
@@ -27,6 +28,7 @@ public class SMSConnectService extends Service {
     private long timestamp;
     private Datasource ds;
     private ConnectSMS sms;
+    private Context context = this;
 
     private static String TAG = "Emaktaba Service";
 
@@ -89,7 +91,7 @@ public class SMSConnectService extends Service {
 
             Log.i(TAG, "Request parametes " + params.toString());
 
-            RestClient.post("sms.php", params, new JsonHttpResponseHandler() {
+            RestClient.post(RestClient.getAbsoluteUrl(context,"sms.php"), params, new JsonHttpResponseHandler() {
 
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, JSONObject response) {

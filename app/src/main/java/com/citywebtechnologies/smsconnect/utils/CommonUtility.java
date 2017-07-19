@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 public class CommonUtility {
@@ -21,10 +22,7 @@ public class CommonUtility {
 		ConnectivityManager cm = (ConnectivityManager) context
 				.getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo netInfo = cm.getActiveNetworkInfo();
-		if (netInfo != null && netInfo.isConnected()) {
-			return true;
-		}
-		return false;
+		return netInfo != null && netInfo.isConnected();
 	}
 
 	public static void setAlarm(Context context) {
@@ -51,5 +49,22 @@ public class CommonUtility {
 
 	}
 
+	public static boolean canDownloadMessages(Context context){
+		return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("key_download_sms",false);
+	}
+	public static boolean canSendMessages(Context context){
+		return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("key_send_sms",false);
+	}
+	public static String getSmsServer(Context context){
+		return PreferenceManager.getDefaultSharedPreferences(context).getString("key_sms_server",Constants.BASE_URL);
+	}
+	public static long getWaitSeconds(Context context){
+		String v = PreferenceManager.getDefaultSharedPreferences(context).getString("key_wait_seconds","10");
+		try {
+			return Long.parseLong(v) * 1000;
+		}catch (Exception ex){
+			return 10*1000;
+		}
+	}
 	// check battery level
 }

@@ -11,6 +11,7 @@ import com.citywebtechnologies.smsconnect.RestClient;
 import com.citywebtechnologies.smsconnect.db.DBOpenHelper;
 import com.citywebtechnologies.smsconnect.db.Datasource;
 import com.citywebtechnologies.smsconnect.model.ConnectSMS;
+import com.citywebtechnologies.smsconnect.utils.CommonUtility;
 import com.google.gson.FieldNamingStrategy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -48,7 +49,6 @@ public class DownloadAndSendSMSService extends Service {
     }
     private void DisplayLoggingInfo() {
         Log.d(TAG, "entered DisplayLoggingInfo");
-
         intent.putExtra("time", new Date().toLocaleString());
         sendBroadcast(intent);
     }
@@ -70,13 +70,26 @@ public class DownloadAndSendSMSService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (running)
             return super.onStartCommand(intent, flags, startId);
-        running = true;
+
         Log.d(TAG, "Entered download service onStartCommand method");
+
+        if (!CommonUtility.canDownloadMessages(context)){
+            Log.d(TAG,"Downloading Messages is turned off");
+            return super.onStartCommand(intent, flags, startId);
+        }
+        if (CommonUtility.getSmsServer(context) == null){
+            Log.d(TAG,"Downloading Messages is turned off due to invalid Sms Server URL");
+            return super.onStartCommand(intent, flags, startId);
+        }
+
+        running = true;
 
 
         String selection = DBOpenHelper.MSG_COLUMN_SENT_STATUS + " > 1 ";
         String orderBy = DBOpenHelper.MSG_COLUMN_ID + " DESC";
         List<ConnectSMS> pendingSms = ds.findFilterdMessages(selection, orderBy);
+
+
 
         if (pendingSms.size() < 1) {
 
@@ -85,7 +98,7 @@ public class DownloadAndSendSMSService extends Service {
             params.add("limit", "10");
             params.put("offset", "0");
 
-            RestClient.post("sms.php", params,
+            RestClient.post(RestClient.getAbsoluteUrl(context,"sms.php"), params,
                     new JsonHttpResponseHandler() {
 
                         @Override

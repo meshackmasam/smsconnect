@@ -107,4 +107,46 @@ public class Datasource {
         return database.update(DBOpenHelper.TABLE_MESSAGES, values,
                 DBOpenHelper.MSG_COLUMN_ID + " = " + sms.getId(), null);
     }
+
+
+    public int delete(String selection) {
+        return database.delete(DBOpenHelper.TABLE_MESSAGES,selection, null);
+    }
+
+    public int clearQueue() {
+        String selection = DBOpenHelper.MSG_COLUMN_SENT_STATUS + " = 99 " + " or " + DBOpenHelper.MSG_COLUMN_SENT_STATUS + " = 100 ";
+        ContentValues values = new ContentValues();
+        values.put(DBOpenHelper.MSG_COLUMN_SENT_STATUS, 9);
+        return database.update(DBOpenHelper.TABLE_MESSAGES,values,selection, null);
+    }
+
+    public int count(int state) {
+        String selection = DBOpenHelper.MSG_COLUMN_SENT_STATUS + " = " + state;
+        return count(selection);
+    }
+
+    public int count(int state,int state2) {
+        String selection =
+                DBOpenHelper.MSG_COLUMN_SENT_STATUS + " = " + state + " or " +
+                        DBOpenHelper.MSG_COLUMN_SENT_STATUS + " = " + state2
+                ;
+        return count(selection);
+    }
+
+    public int count(int state,int state2,int state3) {
+        String selection =
+                DBOpenHelper.MSG_COLUMN_SENT_STATUS + " = " + state + " or " +
+                DBOpenHelper.MSG_COLUMN_SENT_STATUS + " = " + state2 + " or " +
+                DBOpenHelper.MSG_COLUMN_SENT_STATUS + " = " + state3
+                ;
+        return count(selection);
+    }
+    public int count(String selection) {
+        Cursor cursor = database.query(DBOpenHelper.TABLE_MESSAGES,
+                messageColumnNames, selection, null, null, null, null);
+        int d = cursor.getCount();
+
+        cursor.close();
+        return d;
+    }
 }

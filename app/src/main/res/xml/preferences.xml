@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference android:title="SMS Server"
+        android:key="key_sms_server"
+        android:summary="SMS URL Server" />
+
+    <CheckBoxPreference android:title="Download SMS"
+        android:defaultValue="false"
+        android:summary="Download SMS from main server for sending."
+        android:key="key_download_sms" />
+
+
+    <CheckBoxPreference android:title="Send SMS"
+        android:defaultValue="false"
+        android:summary="Send SMS downloaded from main server."
+        android:key="key_send_sms" />
+
+    <ListPreference
+        android:defaultValue="10"
+        android:entries="@array/wait_seconds_list"
+        android:entryValues="@array/wait_seconds_list_values"
+        android:key="key_wait_seconds"
+        android:summary="Wait seconds"
+        android:title="Sending Delay" />
+    <Preference android:title="Clear sent SMS"
+        android:summary="Clear all sent messages from app storage."
+        android:key="key_clear_sms" />
+
+
+    <PreferenceCategory
+        android:summary="Don't click bellow unless you have a good reason to click"
+        android:title="Danger Zone">
+
+    </PreferenceCategory>
+    <Preference
+        android:key="key_clear_all_sms"
+        android:summary="Clear all messages from app storage."
+        android:title="Clear all SMS" />
+
+</PreferenceScreen>

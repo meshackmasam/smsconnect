@@ -86,8 +86,10 @@ public class ConnectSMSListAdapter extends BaseAdapter {
 			holder.sentStatus.setText("Permission Denied, Retrying");
 		else if (sms.getSentStatus() == -1 || sms.getSentStatus() == 11)
 			holder.sentStatus.setText("Failed, system error");
-		else if (sms.getSentStatus() == 100 || sms.getSentStatus() == 99)
+		else if (sms.getSentStatus() == 99)
 			holder.sentStatus.setText("Queued");
+		else if (sms.getSentStatus() == 100)
+			holder.sentStatus.setText("Added to queue");
 		else
 			holder.sentStatus.setText("Pending");
 

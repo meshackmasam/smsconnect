@@ -26,10 +26,12 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.citywebtechnologies.smsconnect.MainActivity;
+import com.citywebtechnologies.smsconnect.MyApplication;
 import com.citywebtechnologies.smsconnect.RestClient;
 import com.citywebtechnologies.smsconnect.db.DBOpenHelper;
 import com.citywebtechnologies.smsconnect.db.Datasource;
 import com.citywebtechnologies.smsconnect.model.ConnectSMS;
+import com.citywebtechnologies.smsconnect.utils.CommonUtility;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 
@@ -40,8 +42,9 @@ public class SMSConnectSyncPendingMessagesService extends Service {
     Intent intent;
     private Datasource ds;
     private ConnectSMS sms;
+    private Context context = this;
     private Boolean running = false;
-    List list = Collections.synchronizedList(new ArrayList());
+    List<Long> list = Collections.synchronizedList(new ArrayList<Long>());
     private void DisplayLoggingInfo() {
         DisplayLoggingInfo(false);
     }
@@ -53,6 +56,14 @@ public class SMSConnectSyncPendingMessagesService extends Service {
             sendBroadcast(intent);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+
+        if (refresh)
+        try {
+            ((MyApplication)getApplicationContext()).refresh();
+        }catch (Exception ex){
+            ex.printStackTrace();
         }
 
     }
@@ -79,18 +90,28 @@ public class SMSConnectSyncPendingMessagesService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (running)
             return super.onStartCommand(intent, flags, startId);
-        running = true;
+
         Log.d(TAG, "Entered sms sync service onStartCommand method");
 
-        String selection = DBOpenHelper.MSG_COLUMN_SENT_STATUS + " > 1 ";
-        long DELAY = 10000;
-        Log.d(TAG, "queryer = " + selection);
-        String orderBy = DBOpenHelper.MSG_COLUMN_ID + " DESC";
+        if (!CommonUtility.canSendMessages(context)){
+            Log.d(TAG,"Sending Messages is turned off");
+            return super.onStartCommand(intent, flags, startId);
+        }
+
+        running = true;
+
+        String selection = DBOpenHelper.MSG_COLUMN_SENT_STATUS + " > 1  ";
+        long DELAY = CommonUtility.getWaitSeconds(this);
+        Log.d(TAG, "query = " + selection);
+        String orderBy = DBOpenHelper.MSG_COLUMN_ID + " ASC LIMIT 10";
         List<ConnectSMS> pendingSms = ds.findFilterdMessages(selection, orderBy);
         int pendingSMSCount = pendingSms.size();
         if (pendingSMSCount > 0) {
             for (int i = 0; i < pendingSMSCount; i++) {
-
+                if (!CommonUtility.canSendMessages(context)) {
+                    Log.d(TAG, "Sending Messages is turned off");
+                    break;
+                }
                 final long smsId = pendingSms.get(i).getId();
                 final long smsId2 = pendingSms.get(i).getRec();
                 sms = new ConnectSMS();
@@ -98,11 +119,11 @@ public class SMSConnectSyncPendingMessagesService extends Service {
                 sms.setAddress(pendingSms.get(i).getAddress());
                 sms.setMessage(pendingSms.get(i).getMessage());
                 sms.setSendStatus(pendingSms.get(i).getSentStatus());
-                sms.setDateReceived(pendingSms.get(i).getDateReceived());
+                sms.setDateSent(pendingSms.get(i).getDateSent());
                 final String ads = sms.getAddress();
                 final String msg = sms.getMessage();
                 if (sms.getSentStatus() != 2 && sms.getSentStatus() != 11) {
-                    if (sms.getSentStatus() != 100){
+                    if (sms.getSentStatus() != 100 && sms.getSentStatus() != 99){
                         sms.setSendStatus(100);
                         ds.updateMessageSendStatus(sms);
                         Handler handler = new Handler(Looper.getMainLooper());
@@ -121,19 +142,21 @@ public class SMSConnectSyncPendingMessagesService extends Service {
                                         sms2.setDateSent(Calendar.getInstance().getTimeInMillis());
                                         sms2.setSendStatus(6);
                                         ds.updateMessageSendStatus(sms2);
-                                        DisplayLoggingInfo();
+                                        DisplayLoggingInfo(true);
                                     }
                                 }
 
                             }
                         };
                         handler.postDelayed(r, DELAY);
-                        DELAY = DELAY + 10000;
+                        DELAY = DELAY +  CommonUtility.getWaitSeconds(context);
                         Log.d(TAG, "Log = " + DELAY);
 
                     }else{
-                        sms.setSendStatus(99);
-                        ds.updateMessageSendStatus(sms);
+                        if (sms.getSentStatus() != 99){
+                            sms.setSendStatus(99);
+                            ds.updateMessageSendStatus(sms);
+                        }
                     }
                 } else {
                     updateServerSendStatus(smsId, smsId2,sms.getSentStatus());
@@ -162,18 +185,19 @@ public class SMSConnectSyncPendingMessagesService extends Service {
 
         Log.d(TAG, "Request parameters " + params.toString());
         RestClient.client.setTimeout(70000);
-        RestClient.post("sms.php", params,
+        RestClient.post(RestClient.getAbsoluteUrl(context,"sms.php"), params,
                 new JsonHttpResponseHandler() {
 
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                         super.onSuccess(statusCode, headers, response);
 
-                        String replyMessage = "";
+                        //String replyMessage = "";
                         sms = new ConnectSMS();
                         sms.setId(smsId);
                         sms.setDateSent(Calendar.getInstance().getTimeInMillis());
                         sms.setSendStatus(status == 2 ? 1 : -1);
+                        DisplayLoggingInfo(true);
                         Log.d(TAG, "Update status from Stock Sync ");
 
                         try {
@@ -207,7 +231,7 @@ public class SMSConnectSyncPendingMessagesService extends Service {
             in.putExtra("smsId", smsId);
 
 
-            PendingIntent sentPI = PendingIntent.getBroadcast(this,(int)smsId,in ,PendingIntent.FLAG_CANCEL_CURRENT);
+            PendingIntent sentPI = PendingIntent.getBroadcast(this,(int)smsId,in ,PendingIntent.FLAG_UPDATE_CURRENT);
 
             //---when the SMS has been sent---
             registerReceiver(new BroadcastReceiver() {
@@ -245,7 +269,6 @@ public class SMSConnectSyncPendingMessagesService extends Service {
 
 
                 }
-
                 public int init() {
 
                     sms = new ConnectSMS();
