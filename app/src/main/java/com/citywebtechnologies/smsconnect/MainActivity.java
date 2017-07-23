@@ -36,6 +36,8 @@ import com.citywebtechnologies.smsconnect.utils.CommonUtility;
 import butterknife.Bind;
 import butterknife.ButterKnife;
 
+import static com.citywebtechnologies.smsconnect.utils.CommonUtility.getWaitSeconds;
+
 public class MainActivity extends Activity {
 
     private Context context = this;
@@ -192,6 +194,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         ds.open();
         super.onResume();
+            getWaitSeconds(context);
         registerReceiver(broadcastReceiver, new IntentFilter(DownloadAndSendSMSService.BROADCAST_ACTION));
         registerReceiver(broadcastReceiver, new IntentFilter(SMSConnectSyncPendingMessagesService.BROADCAST_ACTION));
         refresh(true);

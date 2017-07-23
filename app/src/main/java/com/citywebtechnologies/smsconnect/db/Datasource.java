@@ -23,7 +23,7 @@ public class Datasource {
     static final String[] messageColumnNames = {DBOpenHelper.MSG_COLUMN_ID,
             DBOpenHelper.MSG_COLUMN_ADDRESS, DBOpenHelper.MSG_COLUMN_MESSAGE,
             DBOpenHelper.MSG_COLUMN_DATE_ADDED,DBOpenHelper.MSG_COLUMN_REC_ID,
-            DBOpenHelper.MSG_COLUMN_SENT_STATUS};
+            DBOpenHelper.MSG_COLUMN_SENT_STATUS,DBOpenHelper.MSG_COLUMN_DELIVERED_STATUS};
 
     public Datasource(Context context) {
         dbhelper = new DBOpenHelper(context);
@@ -43,6 +43,7 @@ public class Datasource {
         values.put(DBOpenHelper.MSG_COLUMN_MESSAGE, sms.getMessage());
         values.put(DBOpenHelper.MSG_COLUMN_DATE_ADDED, sms.getDateSent());
         values.put(DBOpenHelper.MSG_COLUMN_SENT_STATUS, sms.getSentStatus());
+        values.put(DBOpenHelper.MSG_COLUMN_DELIVERED_STATUS, sms.getDeliveredStatus());
         //store original smsId
         values.put(DBOpenHelper.MSG_COLUMN_REC_ID,sms.getRec());
         long insertid = database.insert(DBOpenHelper.TABLE_MESSAGES, null,
@@ -93,6 +94,8 @@ public class Datasource {
                         .getColumnIndex(DBOpenHelper.MSG_COLUMN_REC_ID)));
                 sms.setSendStatus(cursor.getInt(cursor
                         .getColumnIndex(DBOpenHelper.MSG_COLUMN_SENT_STATUS)));
+                sms.setDeliveredStatus(cursor.getInt(cursor
+                        .getColumnIndex(DBOpenHelper.MSG_COLUMN_DELIVERED_STATUS)));
 
                 mList.add(sms);
             }
@@ -104,6 +107,13 @@ public class Datasource {
         ContentValues values = new ContentValues();
         values.put(DBOpenHelper.MSG_COLUMN_DATE_ADDED, sms.getDateSent() + "");
         values.put(DBOpenHelper.MSG_COLUMN_SENT_STATUS, sms.getSentStatus());
+        return database.update(DBOpenHelper.TABLE_MESSAGES, values,
+                DBOpenHelper.MSG_COLUMN_ID + " = " + sms.getId(), null);
+    }
+
+    public int updateMessageDeliveredStatus(ConnectSMS sms) {
+        ContentValues values = new ContentValues();
+        values.put(DBOpenHelper.MSG_COLUMN_DELIVERED_STATUS, sms.getDeliveredStatus() + "");
         return database.update(DBOpenHelper.TABLE_MESSAGES, values,
                 DBOpenHelper.MSG_COLUMN_ID + " = " + sms.getId(), null);
     }

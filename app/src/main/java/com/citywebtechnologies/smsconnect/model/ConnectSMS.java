@@ -10,6 +10,10 @@ public class ConnectSMS {
 	private long dateReceived;
 	private long dateSent;
 	private int sentStatus;
+	private int deliveredStatus;
+
+	public ConnectSMS() {
+	}
 
 	public long getId() {
 		return id;
@@ -76,5 +80,13 @@ public class ConnectSMS {
 				", dateSent=" + dateSent +
 				", sentStatus=" + sentStatus +
 				'}';
+	}
+
+	public int getDeliveredStatus() {
+		return deliveredStatus;
+	}
+
+	public void setDeliveredStatus(int deliveredStatus) {
+		this.deliveredStatus = deliveredStatus;
 	}
 }

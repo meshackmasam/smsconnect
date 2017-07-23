@@ -179,8 +179,15 @@ public class SMSConnectSyncPendingMessagesService extends Service {
 
     private void updateServerSendStatus(final long smsId, final long smsId2,final  int status) {
         RequestParams params = new RequestParams();
-        params.add("cmd", "update");
-        params.add("sms_status", status == 2 ? "sent" : "failed");
+
+        if (status != 8) {
+            params.add("cmd", "update");
+            params.add("sms_status", status == 2 ? "sent" : "failed");
+        }
+        else {
+            params.add("cmd", "update_delivered");
+            params.add("sms_status", "delivered");
+        }
         params.put("sms_id", "" + smsId2);
 
         Log.d(TAG, "Request parameters " + params.toString());
@@ -223,16 +230,19 @@ public class SMSConnectSyncPendingMessagesService extends Service {
                 });
     }
 
-    protected int sendMessage(String senderNumber, String replyMessage, long smsId) {
+    protected int sendMessage(String senderNumber, String replyMessage, final long smsId) {
         try {
             Log.d(TAG, "sending id " + smsId);
-            String SENT = "SMS_SENT";
+            String SENT = "SMS_SENT"+smsId;
+            String DELIVERED = "SMS_DELIVERED"+smsId;
             Intent in  =  new Intent(SENT);
+            Intent out  =  new Intent(DELIVERED);
             in.putExtra("smsId", smsId);
+            out.putExtra("smsId", smsId);
 
 
-            PendingIntent sentPI = PendingIntent.getBroadcast(this,(int)smsId,in ,PendingIntent.FLAG_UPDATE_CURRENT);
-
+            PendingIntent sentPI = PendingIntent.getBroadcast(this,(int)smsId,in ,PendingIntent.FLAG_CANCEL_CURRENT);
+            PendingIntent deliveredPI = PendingIntent.getBroadcast(this, (int)smsId, out, PendingIntent.FLAG_CANCEL_CURRENT);
             //---when the SMS has been sent---
             registerReceiver(new BroadcastReceiver() {
                 int rt = 0;
@@ -261,36 +271,101 @@ public class SMSConnectSyncPendingMessagesService extends Service {
                             rt = 5;
                             break;
                     }
-                    if(intent.getAction().equals("SMS_SENT")){
+                    Log.d(TAG,"Errrrrrrr " + rt);
+                    try {
                         b = intent.getExtras();
-                        init();
-                    }
+                        long smsId = b.getLong("smsId");
+                        if (intent.getAction().equals("SMS_SENT"+smsId)) {
 
+                            init();
+                        }
+                    }catch (Exception ex){
+                        ex.printStackTrace();
+                    }
 
 
                 }
                 public int init() {
 
-                    sms = new ConnectSMS();
-                    sms.setId(b.getLong("smsId"));
-                    sms.setDateSent(Calendar.getInstance().getTimeInMillis());
-                    sms.setSendStatus(rt);
-                    Log.d(TAG, "MessageId : " + b.getLong("smsId") + ", id: " + ds.updateMessageSendStatus(sms));
-                    ds.updateMessageSendStatus(sms);
-                    Log.d(TAG, "MessageId : " + sms.getId() + ", status: " + sms.getSentStatus());
+                    ConnectSMS sms_sent = new ConnectSMS();
+                    sms_sent.setId(b.getLong("smsId"));
+                    sms_sent.setDateSent(Calendar.getInstance().getTimeInMillis());
+                    sms_sent.setSendStatus(rt);
+                    Log.d(TAG, "MessageId : " + b.getLong("smsId") + ", id: " + ds.updateMessageSendStatus(sms_sent));
+                    ds.updateMessageSendStatus(sms_sent);
+                    Log.d(TAG, "MessageId : " + sms_sent.getId() + ", status: " + sms_sent.getSentStatus());
                     unregisterReceiver(this);
-                    Log.d(TAG, "2Contains = " + list.contains(sms.getId()));
-                    Log.d(TAG, "2Index of obj = " + list.lastIndexOf(sms.getId()));
-                    if (list.contains(sms.getId())){
-                        list.remove(sms.getId());
+                    Log.d(TAG, "2Contains = " + list.contains(sms_sent.getId()));
+                    Log.d(TAG, "2Index of obj = " + list.lastIndexOf(sms_sent.getId()));
+                    if (list.contains(sms_sent.getId())){
+                        list.remove(sms_sent.getId());
                     }
 
                     DisplayLoggingInfo(true);
                     return 1;
                 }
             }, new IntentFilter(SENT));
+
+
+
+            registerReceiver(new BroadcastReceiver(){
+                int rt = -1;
+                Bundle b;
+                @Override
+                public void onReceive(Context arg0, Intent arg1)
+                {
+                    switch (getResultCode())
+                    {
+                        case Activity.RESULT_OK:
+                            rt = 1;
+                            //Toast.makeText(getBaseContext(), "SMS delivered", Toast.LENGTH_SHORT).show();
+                            break;
+                        case Activity.RESULT_CANCELED:
+                            rt = -1;
+                            //Toast.makeText(getBaseContext(), "SMS not delivered", Toast.LENGTH_SHORT).show();
+                            break;
+                    }
+
+
+                    Log.d(TAG,"Errrrrrrr " + rt);
+                    try {
+                        b = intent.getExtras();
+                        long smsId = b.getLong("smsId");
+                        if (intent.getAction().equals("SMS_DELIVERED"+smsId)) {
+
+                            init();
+                        }
+                    }catch (Exception ex){
+                        ex.printStackTrace();
+                    }
+                }
+
+                public int init() {
+
+
+                    String selection = DBOpenHelper.MSG_COLUMN_ID + " = " + smsId;
+                    List<ConnectSMS> smss = ds.findFilterdMessages(selection, null);
+
+
+                    if(smss.size() > 0) {
+                        ConnectSMS sms_del = smss.get(0);
+                        sms_del.setDeliveredStatus(rt);
+                        ds.updateMessageDeliveredStatus(sms_del);
+                        Log.d(TAG, "MessageId : " + sms_del.getId() + ", status: " + sms_del.getDateReceived());
+                        unregisterReceiver(this);
+
+                        if (rt == 1)
+                        updateServerSendStatus(smsId, sms_del.getRec(), 8);
+                        DisplayLoggingInfo(true);
+                    }
+                    return 1;
+                }
+            }, new IntentFilter(DELIVERED));
+
+
+
             Log.d(TAG, "Reply message: " + replyMessage + ", number: " + senderNumber);
-            SmsManager.getDefault().sendTextMessage(senderNumber, null, replyMessage, sentPI, null);
+            SmsManager.getDefault().sendTextMessage(senderNumber, null, replyMessage, sentPI, deliveredPI);
             return 1;
         }catch (IllegalArgumentException ex){
             if (list.contains(smsId)){

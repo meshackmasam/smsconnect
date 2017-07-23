@@ -63,6 +63,7 @@ public class CommonUtility {
 		try {
 			return Long.parseLong(v) * 1000;
 		}catch (Exception ex){
+			ex.printStackTrace();
 			return 10*1000;
 		}
 	}

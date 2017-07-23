@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DBOpenHelper extends SQLiteOpenHelper {
 
 	public static final String DATABASE_NAME = "stocksms.db";
-	private static final int DATABASE_VERSION = 1;
+	private static final int DATABASE_VERSION = 2;
 
 	public static final String TABLE_MESSAGES = "messages";
 
@@ -16,6 +16,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static final String MSG_COLUMN_ADDRESS = "address";
 	public static final String MSG_COLUMN_MESSAGE = "message";
 	public static final String MSG_COLUMN_SENT_STATUS = "sent_status";
+	public static final String MSG_COLUMN_DELIVERED_STATUS = "delivered_status";
 	public static final String MSG_COLUMN_DATE_ADDED = "date_added";
 
 	//added original smsId field to database
@@ -23,8 +24,10 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			+ TABLE_MESSAGES + " (" + MSG_COLUMN_ID
 			+ " INTEGER PRIMARY KEY AUTOINCREMENT, " + MSG_COLUMN_ADDRESS
 			+ " TEXT, " + MSG_COLUMN_MESSAGE + " TEXT, "
-			+ MSG_COLUMN_DATE_ADDED + " NUMERIC," + MSG_COLUMN_REC_ID + " INTEGER," + MSG_COLUMN_SENT_STATUS
-			+ " INTEGER )";
+			+ MSG_COLUMN_DATE_ADDED + " NUMERIC," + MSG_COLUMN_REC_ID + " INTEGER,"
+			+ MSG_COLUMN_SENT_STATUS + " INTEGER ,"
+			+ MSG_COLUMN_DELIVERED_STATUS + " INTEGER "
+			+ ")";
 
 	public DBOpenHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);

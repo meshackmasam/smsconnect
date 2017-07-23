@@ -73,9 +73,9 @@ public class ConnectSMSListAdapter extends BaseAdapter {
 
 		holder.address.setText(sms.getAddress());
 		if (sms.getSentStatus() == 1)
-			holder.sentStatus.setText("Sent & server updated");
+			holder.sentStatus.setText("Sent & server updated " + (sms.getDeliveredStatus() == 1 ? "- Delivered" : ""));
 		else if (sms.getSentStatus() == 2)
-			holder.sentStatus.setText("Sent, Waiting server update");
+			holder.sentStatus.setText("Sent, Waiting server update " + (sms.getDeliveredStatus() == 1 ? "- Delivered" : ""));
 		else if (sms.getSentStatus() == 3)
 			holder.sentStatus.setText("Failed, Retrying");
 		else if (sms.getSentStatus() == 4)
