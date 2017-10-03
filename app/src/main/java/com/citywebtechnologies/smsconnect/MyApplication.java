@@ -9,11 +9,15 @@ import com.citywebtechnologies.smsconnect.db.Datasource;
 import com.citywebtechnologies.smsconnect.service.DownloadAndSendSMSService;
 import com.citywebtechnologies.smsconnect.service.SMSConnectSyncPendingMessagesService;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by MESHACK on 7/18/2017.
  */
 
 public class MyApplication extends Application {
+    public static List<Long> waits = new ArrayList<>();
     @Override
     public void onCreate() {
         super.onCreate();

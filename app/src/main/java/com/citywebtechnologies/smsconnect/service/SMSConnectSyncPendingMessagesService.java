@@ -108,11 +108,20 @@ public class SMSConnectSyncPendingMessagesService extends Service {
         int pendingSMSCount = pendingSms.size();
         if (pendingSMSCount > 0) {
             for (int i = 0; i < pendingSMSCount; i++) {
+
                 if (!CommonUtility.canSendMessages(context)) {
                     Log.d(TAG, "Sending Messages is turned off");
                     break;
                 }
+
+
                 final long smsId = pendingSms.get(i).getId();
+
+                if (!CommonUtility.canConsume(smsId)) {
+                    Log.d(TAG, "Waited message skipped");
+                    continue;
+                }
+
                 final long smsId2 = pendingSms.get(i).getRec();
                 sms = new ConnectSMS();
                 sms.setId(pendingSms.get(i).getId());
@@ -241,8 +250,10 @@ public class SMSConnectSyncPendingMessagesService extends Service {
             out.putExtra("smsId", smsId);
 
 
-            PendingIntent sentPI = PendingIntent.getBroadcast(this,(int)smsId,in ,PendingIntent.FLAG_CANCEL_CURRENT);
-            PendingIntent deliveredPI = PendingIntent.getBroadcast(this, (int)smsId, out, PendingIntent.FLAG_CANCEL_CURRENT);
+            PendingIntent sentPI = PendingIntent.getBroadcast(this,(int)smsId,
+                    in ,PendingIntent.FLAG_CANCEL_CURRENT);
+            PendingIntent deliveredPI = PendingIntent.getBroadcast(this, (int)smsId,
+                    out, PendingIntent.FLAG_CANCEL_CURRENT);
             //---when the SMS has been sent---
             registerReceiver(new BroadcastReceiver() {
                 int rt = 0;
@@ -263,8 +274,7 @@ public class SMSConnectSyncPendingMessagesService extends Service {
                             rt = 4;
                             break;
                         case SmsManager.RESULT_ERROR_NULL_PDU:
-                            Toast.makeText(getBaseContext(), "Null PDU",
-                                    Toast.LENGTH_SHORT).show();
+                            //Toast.makeText(getBaseContext(), "Null PDU",Toast.LENGTH_SHORT).show();
                             break;
                         case SmsManager.RESULT_ERROR_RADIO_OFF:
                             //Toast.makeText(getBaseContext(), "Radio off",Toast.LENGTH_SHORT).show();
@@ -293,6 +303,10 @@ public class SMSConnectSyncPendingMessagesService extends Service {
                     sms_sent.setSendStatus(rt);
                     Log.d(TAG, "MessageId : " + b.getLong("smsId") + ", id: " + ds.updateMessageSendStatus(sms_sent));
                     ds.updateMessageSendStatus(sms_sent);
+
+                    if (rt > 2)
+                        CommonUtility.waitConsume(sms_sent.getId());
+
                     Log.d(TAG, "MessageId : " + sms_sent.getId() + ", status: " + sms_sent.getSentStatus());
                     unregisterReceiver(this);
                     Log.d(TAG, "2Contains = " + list.contains(sms_sent.getId()));
@@ -365,7 +379,24 @@ public class SMSConnectSyncPendingMessagesService extends Service {
 
 
             Log.d(TAG, "Reply message: " + replyMessage + ", number: " + senderNumber);
-            SmsManager.getDefault().sendTextMessage(senderNumber, null, replyMessage, sentPI, deliveredPI);
+
+            if (replyMessage.length() > 159){
+
+                List<String> l = CommonUtility.getParts(replyMessage,159);
+
+                int i = 0;
+                for (String m:l) {
+                    if (i == 0) {
+                        SmsManager.getDefault().sendTextMessage(senderNumber, null, m, sentPI, deliveredPI);
+                    }else{
+                        SmsManager.getDefault().sendTextMessage(senderNumber, null, m, null, null);
+                    }
+                    i = 1;
+                }
+            }else{
+                SmsManager.getDefault().sendTextMessage(senderNumber, null, replyMessage, sentPI, deliveredPI);
+            }
+
             return 1;
         }catch (IllegalArgumentException ex){
             if (list.contains(smsId)){
